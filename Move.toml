@@ -4,9 +4,9 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-liquidity_pool = "_"
+liquidity_pool = "aa4efc5f6235612f916dbb2ba356876e740505113ac0062da07e64e41618422f"
 
-[dev-addresses]
+[dev-addresses] 
 
 [dependencies.AptosFramework]
 git = "https://github.com/aptos-labs/aptos-framework.git"
