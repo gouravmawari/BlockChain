@@ -1,0 +1,21 @@
+[package]
+name = "LiquidityPool"
+version = "1.0.0"
+authors = []
+
+[addresses]
+liquidity_pool = "_"
+
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-framework.git"
+rev = "mainnet"
+subdir = "aptos-framework"  
+
+[dependencies.AptosStdlib]
+git = "https://github.com/aptos-labs/aptos-framework.git"
+rev = "mainnet"
+subdir = "aptos-stdlib"
+
+[dev-dependencies]
