@@ -125,8 +125,9 @@ module liquidity_pool::CLOB {
         let book = borrow_global_mut<OrderBook<Base, Quote>>(book_addr);
 
         // Calculate how much Quote currency is needed
-        // Example: Buy 10 APT at $12 = Need $120
-        let quote_needed = (price * size) / 1000000; // Adjust for decimals
+        // FIXED: Proper calculation for 8 decimal tokens
+        // For mixed decimals, you'll need to adjust this formula
+        let quote_needed = (price * size) / 100000000;
         
         // Lock the Quote coins in escrow
         let quote_coins = coin::withdraw<Quote>(user, quote_needed);
@@ -287,7 +288,7 @@ module liquidity_pool::CLOB {
         mut_order
     }
 
-    // Renamed and simplified matching function
+    // Matching function
     fun match_at_level_inline<Base, Quote>(
         base_escrow: &mut Coin<Base>,
         quote_escrow: &mut Coin<Quote>,
@@ -322,7 +323,7 @@ module liquidity_pool::CLOB {
 
             // Execute trade inline
             let base_amount = trade_size;
-            let quote_amount = (price_level.price * trade_size) / 1000000;
+            let quote_amount = (price_level.price * trade_size) / 100000000;
 
             if (incoming_is_buy) {
                 // Taker is buying, maker is selling
@@ -541,63 +542,27 @@ module liquidity_pool::CLOB {
 }
 
 // ============================================
-// HOW IT ALL WORKS TOGETHER
+// HOW TO USE FOR TOKEN-TO-TOKEN TRADING
 // ============================================
 /*
 
-SCENARIO: Trading APT for USDC
+EXAMPLE: Trading APT for TestUSDC
 
-Initial State:
-- Order Book is empty
+1. Deploy both CLOB and TestUSDC modules
+2. Initialize TestUSDC and mint tokens
+3. Initialize order book with type args:
+   --type-args 0x1::aptos_coin::AptosCoin 0xaa4efc5f6235612f916dbb2ba356876e740505113ac0062da07e64e41618422f::TestUSDC::TestUSDC
 
-User Alice: "I want to SELL 10 APT at $12.00"
-1. Alice places sell order
-2. No buy orders exist → Can't match
-3. Order added to sell side at $12.00
-4. 10 APT locked in escrow
+4. Place orders with proper decimal handling:
+   - APT has 8 decimals: 1 APT = 100,000,000
+   - USDC typically has 6 decimals: 1 USDC = 1,000,000
+   
+5. Example: Buy 1 APT at $10 per APT
+   price: 10,000,000 (10 USDC with 6 decimals)
+   size: 100,000,000 (1 APT with 8 decimals)
+   quote_needed = (10,000,000 * 100,000,000) / 100,000,000 = 10,000,000 (10 USDC)
 
-Order Book Now:
-SELL: $12.00 → 10 APT (Alice)
-BUY:  (empty)
-
-User Bob: "I want to BUY 5 APT at $11.50"
-1. Bob places buy order  
-2. Check sell side: Cheapest sell is $12.00
-3. Bob's max price $11.50 < $12.00 → Can't match
-4. Order added to buy side at $11.50
-5. $57.50 USDC locked in escrow ($11.50 × 5)
-
-Order Book Now:
-SELL: $12.00 → 10 APT (Alice)
-BUY:  $11.50 → 5 APT (Bob)
-
-User Carol: "I want to BUY 8 APT at $12.50"
-1. Carol places buy order
-2. Check sell side: Cheapest is $12.00 (Alice)
-3. Carol's max $12.50 >= $12.00 ✅ CAN MATCH!
-4. Trade 8 APT at $12.00
-5. Alice gets: $96 USDC (8 × $12.00)
-6. Carol gets: 8 APT
-7. Alice has 2 APT left at $12.00
-
-Order Book Now:
-SELL: $12.00 → 2 APT (Alice)
-BUY:  $11.50 → 5 APT (Bob)
-
-User Dave: "I want to SELL 20 APT at $11.00"
-1. Dave places sell order
-2. Check buy side: Highest buy is $11.50 (Bob)
-3. Dave's min $11.00 <= $11.50 ✅ CAN MATCH!
-4. Trade 5 APT at $11.50 (Bob's price)
-5. Bob gets: 5 APT
-6. Dave gets: $57.50 USDC
-7. Dave has 15 APT left to sell
-
-Order Book Now:
-SELL: $11.00 → 15 APT (Dave)
-SELL: $12.00 → 2 APT (Alice)
-BUY:  (empty)
-
-This is how a CLOB works! 🎯
+NOTE: This calculation works when both tokens use 8 decimals.
+For mixed decimals (APT=8, USDC=6), adjust the formula accordingly.
 
 */
